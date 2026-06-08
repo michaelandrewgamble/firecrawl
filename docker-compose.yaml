@@ -1,10 +1,11 @@
 name: firecrawl
 
 x-common-service: &common-service
-  # NOTE: If you don't want to build the service locally,
-  # comment out the build: statement and uncomment the image: statement
-  # image: ghcr.io/firecrawl/firecrawl
-  build: apps/api
+  # Self-host: use the prebuilt multi-arch (amd64+arm64) image instead of a
+  # local source build. To build from source instead, comment image: and
+  # uncomment build:.
+  image: ghcr.io/firecrawl/firecrawl:latest@sha256:d1ae2e4e0b9febaa6b8830126ed3a4d1ebf63efcf4c26136472b61f3395d3104
+  # build: apps/api
 
   ulimits:
     nofile:
@@ -58,10 +59,10 @@ x-common-env: &common-env
 
 services:
   playwright-service:
-    # NOTE: If you don't want to build the service locally,
-    # comment out the build: statement and uncomment the image: statement
-    # image: ghcr.io/firecrawl/playwright-service:latest
-    build: apps/playwright-service-ts
+    # Self-host: prebuilt multi-arch image. Comment image: + uncomment build:
+    # to build from source instead.
+    image: ghcr.io/firecrawl/playwright-service:latest@sha256:443030bed5c8162c85998276f76bf7f8a95545dfeb088581f41f91506cfa1017
+    # build: apps/playwright-service-ts
     environment:
       PORT: 3000
       PROXY_SERVER: ${PROXY_SERVER}
@@ -107,6 +108,14 @@ services:
     ports:
       - "${PORT:-3002}:${INTERNAL_PORT:-3002}"
     command: node dist/src/harness.js --start-docker
+    # Health gate for host-services redeploy rollback. api image ships node
+    # only (no curl/wget), so probe the root route with a node one-liner.
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:'+(process.env.INTERNAL_PORT||3002)+'/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
     # Resource limits for Docker Compose (not Swarm)
     # Increase if you have more CPU cores/RAM available
     cpus: 4.0
@@ -149,10 +158,10 @@ services:
         compress: "true"
   
   nuq-postgres:
-    # NOTE: If you don't want to build the image locally,
-    # comment out the build: statement and uncomment the image: statement
-    # image: ghcr.io/firecrawl/nuq-postgres:latest
-    build: apps/nuq-postgres
+    # Self-host: prebuilt image. Comment image: + uncomment build: to build
+    # from source instead.
+    image: ghcr.io/firecrawl/nuq-postgres:latest@sha256:f9388bd25ae2e1f1d034518236f993ce236173c1d8800ce24092ea6643a95a33
+    # build: apps/nuq-postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
