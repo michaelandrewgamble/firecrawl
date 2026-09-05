@@ -4,7 +4,7 @@ x-common-service: &common-service
   # Self-host: use the prebuilt multi-arch (amd64+arm64) image instead of a
   # local source build. To build from source instead, comment image: and
   # uncomment build:.
-  image: ghcr.io/firecrawl/firecrawl:latest@sha256:d1ae2e4e0b9febaa6b8830126ed3a4d1ebf63efcf4c26136472b61f3395d3104
+  image: ghcr.io/firecrawl/firecrawl:latest@sha256:3152f525f96784f55ce066318f9105cd35d61a9feff5e942aba09eff2eedf532
   # build: apps/api
 
   ulimits:
